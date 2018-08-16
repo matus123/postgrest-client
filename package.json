@@ -1,0 +1,32 @@
+{
+  "name": "postgrest-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "lint": "tslint -c tslint.json --project tsconfig.json",
+    "test": "jest -c jest-unit.js",
+    "coverage": "jest -c jest-coverage.js",
+    "build": "tsc",
+    "clean": "rm -rf build/"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "0.18.0",
+    "lodash": "4.17.10"
+  },
+  "engines": {
+    "node": ">=8.9.0"
+  },
+  "devDependencies": {
+    "@types/jest": "23.3.1",
+    "@types/lodash": "4.14.115",
+    "jest": "23.4.2",
+    "supertest": "3.1.0",
+    "ts-jest": "23.0.1",
+    "ts-node": "7.0.0",
+    "tslint": "5.11.0",
+    "typescript": "3.0.1"
+  }
+}
