@@ -8,7 +8,7 @@
     "test": "jest -c jest-unit.js",
     "coverage": "jest -c jest-coverage.js",
     "build": "tsc",
-    "clean": "rm -rf build/"
+    "clean": "rm -rf lib/"
   },
   "author": "",
   "license": "ISC",

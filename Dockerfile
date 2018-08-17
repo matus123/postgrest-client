@@ -1,4 +1,4 @@
-FROM node:8.9.1-alpine AS release
+FROM mdillon/postgis:10-alpine
 
 RUN adduser -s /bin/false -D app &&\
   npm install --global yarn

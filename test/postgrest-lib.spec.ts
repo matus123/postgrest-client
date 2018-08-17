@@ -1,5 +1,5 @@
-import { FilterOperator, Ordering } from '../src/constants';
 import { PostgrestClient, postgrestClient } from '../src';
+import { FilterOperator, Ordering } from '../src/constants';
 
 describe('#PostgrestClient', () => {
   describe('#Initialing client', () => {
@@ -39,7 +39,7 @@ describe('#PostgrestClient', () => {
     test('Simple condition', () => {
       const client = postgrestClient().url('http://localhost:3000').filter({
         test: {
-          operator: FilterOperator.eq,
+          operator: FilterOperator.Eq,
           value: 4,
         },
       });
@@ -51,7 +51,7 @@ describe('#PostgrestClient', () => {
       const client = postgrestClient().url('http://localhost:3000').filter({
         test: {
           tableName: 'test_test',
-          operator: FilterOperator.eq,
+          operator: FilterOperator.Eq,
           value: 4,
         },
       });
@@ -62,7 +62,7 @@ describe('#PostgrestClient', () => {
     test('`In` operator escaping', () => {
       const client = postgrestClient().url('http://localhost:3000').filter({
         btest: {
-          operator: FilterOperator.in,
+          operator: FilterOperator.In,
           value: [4, 5],
         },
       });
@@ -73,7 +73,7 @@ describe('#PostgrestClient', () => {
     test('`Like` operator escaping ', () => {
       const client = postgrestClient().url('http://localhost:3000').filter({
         atest: {
-          operator: FilterOperator.like,
+          operator: FilterOperator.Like,
           value: 'dubohon%',
         },
       });
@@ -84,11 +84,11 @@ describe('#PostgrestClient', () => {
     test('Multiple conditions ', () => {
       const client = postgrestClient().url('http://localhost:3000').filter({
         atest: {
-          operator: FilterOperator.eq,
+          operator: FilterOperator.Eq,
           value: 4,
         },
         btest: {
-          operator: FilterOperator.in,
+          operator: FilterOperator.In,
           value: [4, 5],
         },
       });

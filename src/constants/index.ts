@@ -1,19 +1,19 @@
 export enum FilterOperator {
-  eq = 'eq',
-  gt = 'gt',
-  gte = 'gte',
-  lt = 'lt',
-  lte = 'lte',
-  neq = 'neq',
-  like = 'like', // TODO convert % to * if used unescaped
-  ilike = 'ilike', // TODO convert % to * if used unescaped
-  in = 'in', // TODO special handling... values should be in in.(1,2,3)
-  is = 'is',
-  fts = 'fts',
-  plfts = 'plfts',
-  phfts = 'phfts',
-  cs = 'cs', // cs.{example, new}
-  cd = 'cd', // cd.{1,2,3}
+  Eq = 'eq',
+  Gt = 'gt',
+  Gte = 'gte',
+  Lt = 'lt',
+  Lte = 'lte',
+  Neq = 'neq',
+  Like = 'like', // TODO convert % to * if used unescaped
+  Ilike = 'ilike', // TODO convert % to * if used unescaped
+  In = 'in', // TODO special handling... values should be in in.(1,2,3)
+  Is = 'is',
+  Fts = 'fts',
+  Plfts = 'plfts',
+  Phfts = 'phfts',
+  Cs = 'cs', // cs.{example, new}
+  Cd = 'cd', // cd.{1,2,3}
   // ov	overlap (have points in common), e.g. ?period=ov.[2017-01-01,2017-06-30]	&&
   // sl	strictly left of, e.g. ?range=sl.(1,10)	<<
   // sr	strictly right of	>>
