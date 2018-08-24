@@ -5,7 +5,7 @@ services:
   server:
     image: postgrest/postgrest
     ports:
-      - "3000:3000"
+      - "3005:3000"
     links:
       - db:db
     environment:
@@ -15,9 +15,10 @@ services:
     depends_on:
       - db
   db:
-    image: mdillon/postgis:10-alpine
+    build:
+      context: ./database
     ports:
-      - "5432:5432"
+      - "5434:5432"
     environment:
       POSTGRES_DB: app_db
       POSTGRES_USER: app_user

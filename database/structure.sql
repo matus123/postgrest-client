@@ -1,0 +1,5 @@
+CREATE SCHEMA IF NOT EXISTS api AUTHORIZATION app_user;
+
+CREATE TABLE api.todos (
+  
+);
