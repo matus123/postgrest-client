@@ -1,59 +1,54 @@
-import { isArray, isEmpty, reduce, isString } from 'lodash';
+import { isArray, isEmpty, reduce } from 'lodash';
 
-import { PostgrestClientFilter, PostgrestClientSelect } from '..';
+import { IPostgrestClientFilterDefinition, PostgrestClientFilter, PostgrestClientFilterValue } from '..';
 import { FilterOperator } from '../constants';
 
 function escapeValue(value: string|number|string[]|number[], operator: FilterOperator) {
-  if (operator === FilterOperator.in && isArray(value)) {
+  if (operator === FilterOperator.In && isArray(value)) {
     return `(${value.join(',')})`;
   }
 
-  if ([FilterOperator.like, FilterOperator.ilike].includes(operator) && !isArray(value)) {
+  if ([FilterOperator.Like, FilterOperator.Ilike].includes(operator) && !isArray(value)) {
     return value.toString().replace('%', '*');
   }
 
   return value;
 }
 
-export function parseFilters(filterValue?: PostgrestClientFilter): string | undefined {
+function isFilterObject(filterValue: PostgrestClientFilterValue): filterValue is IPostgrestClientFilterDefinition {
+  if ((filterValue as IPostgrestClientFilterDefinition).operator != null &&
+      (filterValue as IPostgrestClientFilterDefinition).value != null
+    ) {
+    return true;
+  }
+  return false;
+}
+
+export interface IParsedFilters {
+  [key: string]: string;
+}
+
+export function parseFilters(filterValue?: PostgrestClientFilter): IParsedFilters {
   if (!filterValue || isEmpty(filterValue)) {
-    return undefined;
+    return {};
   }
 
   const filterQuery = reduce(filterValue, (query, filterObj, key) => {
+    // TODO
     if (key === 'or' || key === 'and') {
       return query;
     }
 
-    const value = escapeValue(filterObj.value, filterObj.operator);
-
-    query.push(`${filterObj.tableName ? `${filterObj.tableName}.` : ''}${key}=${filterObj.operator}.${value}`);
-
-    return query;
-  }, [] as string[]).join('&');
-
-  return filterQuery;
-}
-
-export function parseSelect(selectValue?: PostgrestClientSelect): string | undefined {
-  if (!selectValue || isEmpty(selectValue)) {
-    return undefined;
-  }
-
-  const filterQuery = reduce(selectValue, (query, select) => {
-
-    if (isString(select)) {
-      query.push(select);
+    // complex object
+    if (isFilterObject(filterObj)) {
+      const value = escapeValue(filterObj.value, filterObj.operator);
+      query[`${filterObj.tableName ? `${filterObj.tableName}.` : ''}${key}`] = `${filterObj.operator}.${value}`;
     } else {
-      query.push(`${select.alias ? `${select.alias}:` : ''}${select.column}${select.cast ? `::${select.cast}` : ''}`);
+      query[key] = `${FilterOperator.Eq}.${filterObj.toString()}`;
     }
 
     return query;
-  }, [] as string[]).join(',');
-
-  if (filterQuery) {
-    return `select=${filterQuery}`;
-  }
+  }, {} as IParsedFilters);
 
   return filterQuery;
 }

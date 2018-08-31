@@ -1,0 +1,8 @@
+upsert
+    - prefer resolution=merge-duplicates|ignore-duplicates
+insert/post
+    - csv format
+put
+    -
+rpc
+    -

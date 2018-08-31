@@ -12,7 +12,7 @@ module.exports = {
   },
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/build'
+    '/lib'
   ],
   moduleFileExtensions: [
     'ts',

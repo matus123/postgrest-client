@@ -2,10 +2,11 @@
   "name": "postgrest-client",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "lint": "tslint -c tslint.json --project tsconfig.json",
-    "test": "jest -c jest-unit.js",
+    "test": "jest -c jest.js",
     "coverage": "jest -c jest-coverage.js",
     "build": "tsc",
     "clean": "rm -rf lib/"

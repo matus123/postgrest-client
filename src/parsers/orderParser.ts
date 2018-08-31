@@ -1,12 +1,17 @@
 import { isEmpty, reduce } from 'lodash';
+
 import { PostgrestClientOrder } from '..';
 
-export function parseOrders(orderValue?: PostgrestClientOrder): string | undefined {
+export interface IParsedOrder {
+    order?: string;
+}
+
+export function parseOrders(orderValue?: PostgrestClientOrder): IParsedOrder {
     if (!orderValue || isEmpty(orderValue)) {
-      return undefined;
+      return {};
     }
 
-    let orderQuery = reduce(orderValue, (query, value, key) => {
+    const orderQuery = reduce(orderValue, (query, value, key) => {
         if (typeof value === typeof '') {
             query.push(value);
         } else {
@@ -17,9 +22,11 @@ export function parseOrders(orderValue?: PostgrestClientOrder): string | undefin
         return query;
     }, [] as string[]).join(',');
 
-    if (orderQuery.length > 0) {
-        orderQuery = 'order=' + orderQuery;
+    if (orderQuery) {
+        return {
+            order: orderQuery,
+        };
     }
 
-    return orderQuery;
+    return {};
 }

@@ -1,13 +1,13 @@
 module.exports = {
   verbose: true,
   testEnvironment: 'node',
-  testRegex: '(/test/|/src/).*spec\\.(jsx?|tsx?)$',
+  testRegex: '(/test/).*spec\\.(jsx?|tsx?)$',
   transform: {
     '^.+\\.tsx?$': 'ts-jest'
   },
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/build'
+    '/lib'
   ],
   moduleFileExtensions: [
     'ts',

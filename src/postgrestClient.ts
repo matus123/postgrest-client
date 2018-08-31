@@ -1,9 +1,11 @@
-import axios from 'axios';
-import { cloneDeep, compact } from 'lodash';
+import axios, { AxiosRequestConfig } from 'axios';
+import { cloneDeep, isEmpty } from 'lodash';
 
 import { FilterOperator, Ordering, PostgrestAction } from './constants';
-import { parseFilters, parseSelect } from './parsers/filterParser';
-import {  parseOrders } from './parsers/orderParser';
+import { parseFilters } from './parsers/filterParser';
+import { parseOrders } from './parsers/orderParser';
+import { parseSelect } from './parsers/selectParser';
+
 export interface IPostgrestClientConfig {
   jwt?: string;
   url?: string;
@@ -23,12 +25,16 @@ export interface IPostgrestClientASD {
   and?: IPostgrestClientFilter;
 }
 
+export interface IPostgrestClientFilterDefinition {
+  tableName?: string;
+  operator: FilterOperator;
+  value: string | string[] | number | number[];
+}
+
+export type PostgrestClientFilterValue = IPostgrestClientFilterDefinition | string | number | boolean;
+
 export interface IPostgrestClientFilter {
-  [key: string]: {
-    tableName?: string;
-    operator: FilterOperator;
-    value: string | string[] | number | number[];
-  };
+  [key: string]: PostgrestClientFilterValue;
 }
 
 export type PostgrestClientFilter = IPostgrestClientASD & IPostgrestClientFilter;
@@ -38,6 +44,18 @@ export interface IPostgrestClientOrder {
     direction?: Ordering,
     nulls?: 'first' | 'last',
   };
+}
+
+export enum PostContentType {
+  Json = 'application/json',
+  Csv = 'text/csv',
+}
+
+export enum GetAcceptType {
+  Json = 'application/json',
+  Csv = 'text/csv',
+  Single = 'application/vnd.pgrst.object+json',
+  OctetStream = 'application/octet-stream',
 }
 
 export type PostgrestClientOrder = IPostgrestClientOrder | string[];
@@ -54,7 +72,8 @@ export function postgrestClient(config?: IPostgrestClientConfig) {
 
 export class PostgrestClient {
   private jwtValue?: string;
-  private urlValue?: string;
+  private baseUrl?: string;
+  private urlModel?: string;
 
   private limitValue?: number;
   private offsetValue?: number;
@@ -65,17 +84,39 @@ export class PostgrestClient {
 
   private orderValue?: PostgrestClientOrder;
 
+  private payload?: any | any[];
+  private contentType: PostContentType = PostContentType.Json;
+  private acceptType: GetAcceptType = GetAcceptType.Json;
+
   private typeValue: PostgrestAction = PostgrestAction.Get;
 
   constructor(config?: IPostgrestClientConfig) {
     if (config) {
       this.jwtValue = config.jwt;
-      this.urlValue = config.url;
+      this.baseUrl = config.url;
     }
   }
 
+  public get<T>(select?: PostgrestClientSelect, acceptType?: GetAcceptType) {
+    this.typeValue = PostgrestAction.Get;
+    this.acceptType = acceptType || this.acceptType;
+    this.selectFields = select;
+    return this.exec<T>();
+  }
+
+  public post<T>(payload: T | T[], contentType?: PostContentType) {
+    this.typeValue = PostgrestAction.Post;
+    this.contentType = contentType || this.contentType;
+    this.payload = payload;
+    return this.exec<T>();
+  }
+
+  public put<T>() {
+    return this.exec<T>();
+  }
+
   public url(url: string) {
-    this.urlValue = url;
+    this.baseUrl = url;
     return this;
   }
 
@@ -103,33 +144,82 @@ export class PostgrestClient {
     return cloneDeep(this);
   }
 
-  public toQueryUrl() {
+  public rpc(rpcName: string) {
+    this.urlModel = `rpc/${rpcName}`;
+  }
+
+  public model(modelName: string) {
+    this.urlModel = modelName;
+    return this;
+  }
+
+  public toQuery() {
     const filterQuery = parseFilters(this.filterValue);
 
     const selectQuery = parseSelect(this.selectFields);
 
     const orderQuery = parseOrders(this.orderValue);
 
-    const queries = compact([selectQuery, filterQuery, orderQuery]);
+    const queryString = Object.assign({}, filterQuery, selectQuery, orderQuery);
 
-    const queryString = queries.length > 0 ? `?${queries.join('&')}` : '';
-
-    return `${this.urlValue}${queryString}`;
+    return {
+      url: this.getUrl(),
+      queryString: !isEmpty(queryString) ? queryString : undefined,
+    };
   }
 
-  public async exec() {
-    try {
-      const response = axios.request({
-        method: this.typeValue,
-        url: this.urlValue,
+  private async exec<T>() {
+    const requestBody = this.prepareAxiosRequest();
 
-        // TODO
-        // headers
-        // data
-        // responseType
-      });
+    try {
+      const response = await axios.request<T>(requestBody);
+      return response;
     } catch (err) {
       console.log(err);
+      throw err;
     }
+  }
+
+  private getUrl() {
+    if (!this.baseUrl || !this.urlModel) {
+      throw new Error('url and rpc/model must be specified');
+    }
+
+    return `${this.baseUrl}/${this.urlModel}`;
+  }
+
+  private prepareAxiosRequest(): AxiosRequestConfig {
+    const query = this.toQuery();
+
+    const baseRequest: AxiosRequestConfig = {
+      headers: {
+        accept: this.acceptType,
+        ['content-type']: this.contentType,
+      },
+      method: this.typeValue,
+      url: query.url,
+    };
+
+    let requestConfig: AxiosRequestConfig  = {};
+
+    if (this.typeValue === PostgrestAction.Get) {
+      requestConfig = Object.assign({}, baseRequest, { params: query.queryString });
+    }
+
+    if (this.typeValue === PostgrestAction.Post) {
+      requestConfig = Object.assign({}, baseRequest, { data: this.payload });
+    }
+
+    if (this.typeValue === PostgrestAction.Put) {
+      requestConfig = Object.assign({}, baseRequest, { data: this.payload });
+    }
+
+    {
+
+      // TODO
+      // headers
+    }
+
+    return requestConfig;
   }
 }
