@@ -4,25 +4,26 @@ import { cloneDeep, isEmpty } from 'lodash';
 import { FilterOperator, Ordering, PostgrestAction } from './constants';
 import { parseFilters } from './parsers/filterParser';
 import { parseOrders } from './parsers/orderParser';
+import { parseLimit, parseOffset } from './parsers/paginationParser';
 import { parseSelect } from './parsers/selectParser';
+import { parseAuthorizationHeader } from './utils';
 
 export interface IPostgrestClientConfig {
   jwt?: string;
   url?: string;
-  // TODO option for selecting limit/offset in header or query params
 }
 
 export interface IPostgrestClientSelect {
   column: string;
   alias?: string;
   cast?: string;
+  resource?: string;
 }
 
 export type PostgrestClientSelect = Array<IPostgrestClientSelect | string>;
 
 export interface IPostgrestClientASD {
   or?: IPostgrestClientFilter;
-  and?: IPostgrestClientFilter;
 }
 
 export interface IPostgrestClientFilterDefinition {
@@ -39,11 +40,12 @@ export interface IPostgrestClientFilter {
 
 export type PostgrestClientFilter = IPostgrestClientASD & IPostgrestClientFilter;
 
+export type PostgrestClientOrder = Array<IPostgrestClientOrder | string>;
 export interface IPostgrestClientOrder {
-  [key: string]: {
-    direction?: Ordering,
-    nulls?: 'first' | 'last',
-  };
+  column: string;
+  resource?: string;
+  direction?: Ordering;
+  nulls?: 'first' | 'last';
 }
 
 export enum PostContentType {
@@ -58,15 +60,13 @@ export enum GetAcceptType {
   OctetStream = 'application/octet-stream',
 }
 
-export type PostgrestClientOrder = IPostgrestClientOrder | string[];
-
 /**
  * Factory function for postgrestClient
  * @export
  * @param {IPostgrestClientConfig} [config]
  * @returns
  */
-export function postgrestClient(config?: IPostgrestClientConfig) {
+export function makePostgrestClient(config?: IPostgrestClientConfig) {
   return new PostgrestClient(config);
 }
 
@@ -146,6 +146,7 @@ export class PostgrestClient {
 
   public rpc(rpcName: string) {
     this.urlModel = `rpc/${rpcName}`;
+    return this;
   }
 
   public model(modelName: string) {
@@ -160,7 +161,17 @@ export class PostgrestClient {
 
     const orderQuery = parseOrders(this.orderValue);
 
-    const queryString = Object.assign({}, filterQuery, selectQuery, orderQuery);
+    const limitQuery = parseLimit(this.limitValue);
+
+    const offsetQuery = parseOffset(this.offsetValue);
+
+    const queryString = {
+      ...filterQuery,
+      ...selectQuery,
+      ...orderQuery,
+      ...limitQuery,
+      ...offsetQuery,
+    };
 
     return {
       url: this.getUrl(),
@@ -182,7 +193,7 @@ export class PostgrestClient {
 
   private getUrl() {
     if (!this.baseUrl || !this.urlModel) {
-      throw new Error('url and rpc/model must be specified');
+      throw new Error('baseUrl and rpc/model must be specified');
     }
 
     return `${this.baseUrl}/${this.urlModel}`;
@@ -193,6 +204,7 @@ export class PostgrestClient {
 
     const baseRequest: AxiosRequestConfig = {
       headers: {
+        ...parseAuthorizationHeader(this.jwtValue),
         accept: this.acceptType,
         ['content-type']: this.contentType,
       },
@@ -200,7 +212,7 @@ export class PostgrestClient {
       url: query.url,
     };
 
-    let requestConfig: AxiosRequestConfig  = {};
+    let requestConfig: AxiosRequestConfig = {};
 
     if (this.typeValue === PostgrestAction.Get) {
       requestConfig = Object.assign({}, baseRequest, { params: query.queryString });

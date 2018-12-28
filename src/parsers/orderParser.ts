@@ -1,32 +1,49 @@
-import { isEmpty, reduce } from 'lodash';
+import { has, isEmpty, isString, mapValues, reduce } from 'lodash';
 
 import { PostgrestClientOrder } from '..';
 
+const ORDER_KEY = 'order';
+
 export interface IParsedOrder {
-    order?: string;
+    [orderResource: string]: string;
+}
+
+interface IParsedOrderArray {
+    [orderResource: string]: string[];
 }
 
 export function parseOrders(orderValue?: PostgrestClientOrder): IParsedOrder {
     if (!orderValue || isEmpty(orderValue)) {
-      return {};
+        return {};
     }
 
-    const orderQuery = reduce(orderValue, (query, value, key) => {
-        if (typeof value === typeof '') {
-            query.push(value);
+    const orderQuery: IParsedOrderArray = reduce(orderValue, (query, order) => {
+        if (isString(order)) {
+            if (has(query, ORDER_KEY)) {
+                query[ORDER_KEY].push(order);
+            } else {
+                query[ORDER_KEY] = [order];
+            }
         } else {
-            const direction = (value.direction) ? ('.' + value.direction) : '';
-            const nulls = (value.nulls) ? ('.nulls' + value.nulls) : '';
-            query.push(`${key}${direction}${nulls}`);
+            const resource = order.resource;
+
+            const key = resource ? `${resource}.${ORDER_KEY}` : ORDER_KEY;
+
+            const column = order.column;
+            const direction = order.direction ? ('.' + order.direction) : '';
+            const nulls = (order.nulls) ? ('.nulls' + order.nulls) : '';
+            const value = column + direction + nulls;
+
+            if (has(query, key)) {
+                query[key].push(value);
+            } else {
+                query[key] = [value];
+            }
         }
         return query;
-    }, [] as string[]).join(',');
+    }, {} as IParsedOrderArray);
 
-    if (orderQuery) {
-        return {
-            order: orderQuery,
-        };
-    }
-
-    return {};
+    return mapValues(orderQuery, (value) => {
+        return value.join(',');
+    });
 }

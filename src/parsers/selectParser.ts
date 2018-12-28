@@ -16,11 +16,16 @@ export function parseSelect(selectValue?: PostgrestClientSelect): IParsedSelect 
         if (isString(select)) {
             query.push(select);
         } else {
-            query.push(`${select.alias ? `${select.alias}:` : ''}${select.column}${select.cast ? `::${select.cast}` : ''}`);
+            const alias = select.alias ? `${select.alias}:` : '';
+            const column = select.column;
+            const cast = select.cast ? `::${select.cast}` : '';
+            const value = alias + column + cast;
+            query.push(value);
         }
 
         return query;
-    }, [] as string[]).join(',');
+    }, [] as string[])
+        .join(',');
 
     if (filterQuery) {
         return {

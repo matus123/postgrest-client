@@ -1,4 +1,4 @@
-import { FilterOperator, GetAcceptType, PostContentType, PostgrestClient } from '../../src';
+import { FilterOperator, GetAcceptType, PostgrestClient } from '../../src';
 
 describe('#PostgrestClient integration', () => {
   describe('#GET data', () => {
